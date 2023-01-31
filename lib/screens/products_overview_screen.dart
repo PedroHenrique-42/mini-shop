@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop/components/app_drawer.dart';
+import 'package:shop/components/badge.dart';
+import 'package:shop/models/product_list.dart';
 
 import '../components/product_grid.dart';
+import '../models/cart.dart';
+import '../utils/app_routes.dart';
 
 enum FilterOptions {
   favorite,
@@ -16,10 +22,26 @@ class ProductsOverviewScreen extends StatefulWidget {
 
 class _ProductsOverviewScreenState extends State<ProductsOverviewScreen> {
   bool _showFavoriteOnly = false;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    Provider.of<ProductList>(
+      context,
+      listen: false,
+    ).loadProducts().then((value) {
+      setState(() {
+        _isLoading = false;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const AppDrawer(),
       appBar: AppBar(
         centerTitle: true,
         title: const Text('Minha Loja'),
@@ -44,10 +66,24 @@ class _ProductsOverviewScreenState extends State<ProductsOverviewScreen> {
                 }
               });
             },
-          )
+          ),
+          Consumer<Cart>(
+            child: IconButton(
+              onPressed: () {
+                Navigator.pushNamed(context, AppRoutes.cart);
+              },
+              icon: const Icon(Icons.shopping_cart),
+            ),
+            builder: (context, cart, child) => Badge(
+              value: cart.itemsCount.toString(),
+              child: child!,
+            ),
+          ),
         ],
       ),
-      body: ProductGrid(_showFavoriteOnly),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ProductGrid(_showFavoriteOnly),
     );
   }
 }
